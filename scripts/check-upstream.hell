@@ -37,7 +37,7 @@ main = do
     (Exit.die "Could not find version field in Formula/hell.rb")
     IO.pure
     (Maybe.listToMaybe versionLines)
-  let afterPrefix = Tuple.snd (Text.breakOn "version \"" versionLine)
+  let (_before, afterPrefix) = Text.breakOn "version \"" versionLine
   let withoutPrefix = Text.drop (Text.length "version \"") afterPrefix
   let (currentVersion, _rest2) = Text.breakOn "\"" withoutPrefix
 
