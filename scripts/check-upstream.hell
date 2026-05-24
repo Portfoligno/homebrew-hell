@@ -46,7 +46,7 @@ main = do
 
   -- Compare versions. Date-based tags compare lexicographically.
   githubOutput <- Environment.getEnv "GITHUB_OUTPUT"
-  if latestTag > currentVersion
+  if Ord.gt latestTag currentVersion
     then do
       Text.putStrLn (Text.concat ["Update available: ", currentVersion, " -> ", latestTag])
       Text.appendFile githubOutput (Text.concat ["has-update=true\n", "upstream-tag=", latestTag, "\n"])

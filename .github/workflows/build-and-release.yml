@@ -48,11 +48,12 @@ jobs:
           ref: ${{ inputs.upstream-tag }}
 
       - name: Restore Cabal store cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
+        id: cabal-cache
         with:
           path: ~/.cabal/store
-          key: cabal-build-${{ matrix.os }}-${{ inputs.upstream-tag }}
-          restore-keys: cabal-build-${{ matrix.os }}-
+          key: cabal-build-${{ matrix.os }}-${{ runner.arch }}-${{ inputs.upstream-tag }}
+          restore-keys: cabal-build-${{ matrix.os }}-${{ runner.arch }}-
 
       - name: Update Cabal package index
         run: cabal update
@@ -85,6 +86,13 @@ jobs:
         with:
           name: hell-${{ matrix.target }}
           path: hell-${{ matrix.target }}.tar.gz
+
+      - name: Save Cabal store cache
+        if: always() && steps.cabal-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
 
   release:
     needs: build

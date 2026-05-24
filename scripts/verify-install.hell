@@ -40,6 +40,6 @@ main = do
     (Process.proc "hell" ["/tmp/hell-verify-test.hell"])
 
   let trimmed = Text.strip output
-  if trimmed == "verification-ok"
+  if Eq.eq trimmed "verification-ok"
     then Text.putStrLn "Verification passed."
     else Exit.die (Text.concat ["Verification failed. Expected 'verification-ok', got: '", trimmed, "'"])

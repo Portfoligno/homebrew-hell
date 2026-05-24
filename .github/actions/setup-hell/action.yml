@@ -33,10 +33,13 @@ runs:
 
     - name: Restore Cabal store cache
       if: steps.hell-cache.outputs.cache-hit != 'true'
-      uses: actions/cache@v4
+      uses: actions/cache/restore@v4
+      id: cabal-cache
       with:
         path: ~/.cabal/store
         key: cabal-${{ runner.os }}-${{ runner.arch }}-${{ inputs.hell-version }}
+        restore-keys: |
+          cabal-${{ runner.os }}-${{ runner.arch }}-
 
     - name: Update Cabal package index
       if: steps.hell-cache.outputs.cache-hit != 'true'
@@ -70,6 +73,13 @@ runs:
       if: steps.hell-cache.outputs.cache-hit != 'true'
       shell: bash
       run: rm -rf _hell-src
+
+    - name: Save Cabal store cache
+      if: always() && steps.hell-cache.outputs.cache-hit != 'true' && steps.cabal-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cabal/store
+        key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
 
     - name: Add Hell to PATH
       shell: bash
