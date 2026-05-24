@@ -13,6 +13,10 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+  pull-requests: write
+
 concurrency:
   group: build-${{ inputs.upstream-tag }}
 
