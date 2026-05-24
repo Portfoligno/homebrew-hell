@@ -92,7 +92,7 @@ main = do
         , "    (testpath/\"test.hell\").write <<~HELL\n"
         , "      main = Text.putStrLn \"hello from hell\"\n"
         , "    HELL\n"
-        , "    assert_equal \"hello from hell\", shell_output(\"\\#{bin}/hell \\#{testpath}/test.hell\").strip\n"
+        , "    assert_equal \"hello from hell\", shell_output(\"#{bin}/hell #{testpath}/test.hell\").strip\n"
         , "  end\n"
         , "end\n"
         ]

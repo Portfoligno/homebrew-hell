@@ -25,6 +25,6 @@ class Hell < Formula
     (testpath/"test.hell").write <<~HELL
       main = Text.putStrLn "hello from hell"
     HELL
-    assert_equal "hello from hell", shell_output("\#{bin}/hell \#{testpath}/test.hell").strip
+    assert_equal "hello from hell", shell_output("#{bin}/hell #{testpath}/test.hell").strip
   end
 end
