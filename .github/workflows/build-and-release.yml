@@ -58,22 +58,11 @@ jobs:
       - name: Update Cabal package index
         run: cabal update
 
-      - name: Build Hell
-        run: cabal build exe:hell -O2
-
-      - name: Locate built binary
-        id: locate
-        shell: bash
-        run: printf 'path=%s\n' "$(cabal list-bin hell)" >> "$GITHUB_OUTPUT"
+      - name: Build and install Hell binary
+        run: cabal install exe:hell -O2 --install-method=copy --overwrite-policy=always --installdir=_archive
 
       - name: Strip binary
-        run: strip ${{ steps.locate.outputs.path }}
-
-      - name: Create archive directory
-        run: mkdir -p _archive
-
-      - name: Copy binary to archive
-        run: cp ${{ steps.locate.outputs.path }} _archive/hell
+        run: strip _archive/hell
 
       - name: Make binary executable
         run: chmod +x _archive/hell
