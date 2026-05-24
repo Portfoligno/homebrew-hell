@@ -1,0 +1,45 @@
+#!/usr/bin/env hell
+
+-- Verify that Hell installed correctly from the tap.
+-- Usage: ./scripts/verify-install.hell
+--
+-- Checks:
+--   1. The hell binary exists and is executable
+--   2. A trivial Hell script runs successfully
+
+-- Run a process, capture stdout, die on failure.
+readChecked = \label -> \proc -> do
+  (exitCode, stdout, stderr) <- Text.readProcess proc
+  Exit.exitCode
+    (IO.pure stdout)
+    (\code -> Exit.die (Text.concat [label, " failed with exit code ", Show.show code, ": ", stderr]))
+    exitCode
+
+-- Run a process and die on failure (no stdout capture).
+runChecked = \label -> \proc -> do
+  result <- Process.runProcess proc
+  Exit.exitCode
+    (IO.pure ())
+    (\code -> Exit.die (Text.concat [label, " failed with exit code ", Show.show code]))
+    result
+
+main = do
+  -- Verify the binary is accessible.
+  Text.putStrLn "Checking hell binary..."
+  hellPath <- Main.readChecked "which hell"
+    (Process.proc "which" ["hell"])
+  Text.putStrLn (Text.concat ["Found hell at: ", Text.strip hellPath])
+
+  -- Write a trivial test script.
+  let testScript = "main = Text.putStrLn \"verification-ok\"\n"
+  Text.writeFile "/tmp/hell-verify-test.hell" testScript
+
+  -- Run the test script.
+  Text.putStrLn "Running test script..."
+  output <- Main.readChecked "hell test script"
+    (Process.proc "hell" ["/tmp/hell-verify-test.hell"])
+
+  let trimmed = Text.strip output
+  if trimmed == "verification-ok"
+    then Text.putStrLn "Verification passed."
+    else Exit.die (Text.concat ["Verification failed. Expected 'verification-ok', got: '", trimmed, "'"])

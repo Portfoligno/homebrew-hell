@@ -1,0 +1,66 @@
+name: Update formula
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Hell version to update formula to (e.g. 2026-05-02)"
+        required: true
+        type: string
+
+concurrency:
+  group: update-formula
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+
+      # Bootstrap: read .hell-version for the composite action.
+      - name: Read Hell version
+        id: read-version
+        shell: bash
+        run: printf 'hell-version=%s\n' "$(cat .hell-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Hell
+        uses: ./.github/actions/setup-hell
+        with:
+          hell-version: ${{ steps.read-version.outputs.hell-version }}
+
+      - name: Update formula
+        run: ./scripts/update-formula.hell ${{ inputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git user
+        uses: Homebrew/actions/git-user-config@master
+
+      - name: Create update branch
+        run: git checkout -b update/${{ inputs.version }}
+
+      - name: Stage formula
+        run: git add Formula/hell.rb
+
+      - name: Commit formula update
+        run: git commit -m "hell ${{ inputs.version }}"
+
+      - name: Push update branch
+        run: git push origin update/${{ inputs.version }}
+
+      - name: Create pull request
+        run: gh pr create --title "hell ${{ inputs.version }}" --body "Automated formula update for Hell [${{ inputs.version }}](https://github.com/chrisdone/hell/releases/tag/${{ inputs.version }})." --base main --head update/${{ inputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,38 @@
+name: Verify install
+
+on:
+  schedule:
+    - cron: "43 7 * * 1"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-14
+          - macos-15
+          - macos-13
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Bootstrap: read .hell-version for the composite action.
+      - name: Read Hell version
+        id: read-version
+        shell: bash
+        run: printf 'hell-version=%s\n' "$(cat .hell-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Hell
+        uses: ./.github/actions/setup-hell
+        with:
+          hell-version: ${{ steps.read-version.outputs.hell-version }}
+
+      - name: Install from tap
+        run: brew install --formula ./Formula/hell.rb
+
+      - name: Verify installation
+        run: ./scripts/verify-install.hell

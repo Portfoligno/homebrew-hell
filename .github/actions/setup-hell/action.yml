@@ -1,0 +1,76 @@
+name: Setup Hell
+description: Build Hell from source and cache the binary for CI use
+
+inputs:
+  hell-version:
+    description: Hell release tag to build (from .hell-version)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Restore Hell binary cache
+      uses: actions/cache@v4
+      id: hell-cache
+      with:
+        path: ~/.local/bin/hell
+        key: hell-${{ runner.os }}-${{ runner.arch }}-${{ inputs.hell-version }}
+
+    - name: Setup GHC and Cabal
+      if: steps.hell-cache.outputs.cache-hit != 'true'
+      uses: haskell-actions/setup@v2
+      with:
+        ghc-version: "9.8"
+        cabal-version: "latest"
+
+    - name: Checkout Hell source
+      if: steps.hell-cache.outputs.cache-hit != 'true'
+      uses: actions/checkout@v4
+      with:
+        repository: chrisdone/hell
+        ref: ${{ inputs.hell-version }}
+        path: _hell-src
+
+    - name: Restore Cabal store cache
+      if: steps.hell-cache.outputs.cache-hit != 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.cabal/store
+        key: cabal-${{ runner.os }}-${{ runner.arch }}-${{ inputs.hell-version }}
+
+    - name: Update Cabal package index
+      if: steps.hell-cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: _hell-src
+      run: cabal update
+
+    - name: Build Hell
+      if: steps.hell-cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: _hell-src
+      run: cabal build exe:hell -O2
+
+    - name: Create install directory
+      if: steps.hell-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: mkdir -p ~/.local/bin
+
+    - name: Install Hell binary
+      if: steps.hell-cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: _hell-src
+      run: cabal install --install-method=copy --installdir=$HOME/.local/bin exe:hell
+
+    - name: Make Hell executable
+      if: steps.hell-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: chmod +x ~/.local/bin/hell
+
+    - name: Clean up Hell source
+      if: steps.hell-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: rm -rf _hell-src
+
+    - name: Add Hell to PATH
+      shell: bash
+      run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"

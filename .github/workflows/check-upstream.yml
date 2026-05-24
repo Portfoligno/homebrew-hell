@@ -1,0 +1,47 @@
+name: Check upstream
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: check-upstream
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      has-update: ${{ steps.check.outputs.has-update }}
+      upstream-tag: ${{ steps.check.outputs.upstream-tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Bootstrap: read .hell-version for the composite action.
+      # This is the acknowledged bootstrap workaround -- Hell is not
+      # available yet, so we read the file with a shell built-in.
+      - name: Read Hell version
+        id: read-version
+        shell: bash
+        run: printf 'hell-version=%s\n' "$(cat .hell-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Hell
+        uses: ./.github/actions/setup-hell
+        with:
+          hell-version: ${{ steps.read-version.outputs.hell-version }}
+
+      - name: Check for upstream updates
+        id: check
+        run: ./scripts/check-upstream.hell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trigger-build:
+    needs: check
+    if: needs.check.outputs.has-update == 'true'
+    uses: ./.github/workflows/build-and-release.yml
+    with:
+      upstream-tag: ${{ needs.check.outputs.upstream-tag }}
+    secrets: inherit

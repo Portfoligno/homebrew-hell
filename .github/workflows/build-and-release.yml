@@ -1,0 +1,111 @@
+name: Build and release
+
+on:
+  workflow_call:
+    inputs:
+      upstream-tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      upstream-tag:
+        description: "Hell upstream tag to build (e.g. 2026-05-02)"
+        required: true
+        type: string
+
+concurrency:
+  group: build-${{ inputs.upstream-tag }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            arch: aarch64
+            target: aarch64-apple-darwin
+          - os: macos-13
+            arch: x86_64
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - name: Setup GHC and Cabal
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.8"
+          cabal-version: "latest"
+
+      - name: Checkout Hell source
+        uses: actions/checkout@v4
+        with:
+          repository: chrisdone/hell
+          ref: ${{ inputs.upstream-tag }}
+
+      - name: Restore Cabal store cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cabal/store
+          key: cabal-build-${{ matrix.os }}-${{ inputs.upstream-tag }}
+          restore-keys: cabal-build-${{ matrix.os }}-
+
+      - name: Update Cabal package index
+        run: cabal update
+
+      - name: Build Hell
+        run: cabal build exe:hell -O2
+
+      - name: Locate built binary
+        id: locate
+        shell: bash
+        run: printf 'path=%s\n' "$(cabal list-bin hell)" >> "$GITHUB_OUTPUT"
+
+      - name: Strip binary
+        run: strip ${{ steps.locate.outputs.path }}
+
+      - name: Create archive directory
+        run: mkdir -p _archive
+
+      - name: Copy binary to archive
+        run: cp ${{ steps.locate.outputs.path }} _archive/hell
+
+      - name: Make binary executable
+        run: chmod +x _archive/hell
+
+      - name: Create tarball
+        run: tar -czf hell-${{ matrix.target }}.tar.gz -C _archive hell
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hell-${{ matrix.target }}
+          path: hell-${{ matrix.target }}.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: _artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        run: gh release create "${{ inputs.upstream-tag }}" _artifacts/*.tar.gz --title "${{ inputs.upstream-tag }}" --notes "Built from [chrisdone/hell@${{ inputs.upstream-tag }}](https://github.com/chrisdone/hell/releases/tag/${{ inputs.upstream-tag }})"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trigger-formula:
+    needs: release
+    uses: ./.github/workflows/update-formula.yml
+    with:
+      version: ${{ inputs.upstream-tag }}
+    secrets: inherit
