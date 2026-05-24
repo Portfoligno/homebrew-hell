@@ -6,6 +6,9 @@ on:
       upstream-tag:
         required: true
         type: string
+    secrets:
+      DEPLOY_KEY:
+        required: true
   workflow_dispatch:
     inputs:
       upstream-tag:
@@ -15,7 +18,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 concurrency:
   group: build-${{ inputs.upstream-tag }}
@@ -52,8 +54,8 @@ jobs:
         id: cabal-cache
         with:
           path: ~/.cabal/store
-          key: cabal-${{ runner.os }}-${{ runner.arch }}-${{ inputs.upstream-tag }}
-          restore-keys: cabal-${{ runner.os }}-${{ runner.arch }}-
+          key: cabal-${{ runner.os }}-${{ runner.arch }}-ghc9.8-${{ inputs.upstream-tag }}
+          restore-keys: cabal-${{ runner.os }}-${{ runner.arch }}-ghc9.8-
 
       - name: Update Cabal package index
         run: cabal update
@@ -99,14 +101,32 @@ jobs:
           path: _artifacts
           merge-multiple: true
 
-      - name: Create GitHub Release
-        run: gh release create "${{ inputs.upstream-tag }}" _artifacts/*.tar.gz --title "${{ inputs.upstream-tag }}" --notes "Built from [chrisdone/hell@${{ inputs.upstream-tag }}](https://github.com/chrisdone/hell/releases/tag/${{ inputs.upstream-tag }})"
+      - name: Check if release exists
+        id: check-release
+        run: gh release view "$UPSTREAM_TAG" --json tagName --jq .tagName
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM_TAG: ${{ inputs.upstream-tag }}
+
+      - name: Create GitHub Release
+        if: steps.check-release.outcome == 'failure'
+        run: gh release create "$UPSTREAM_TAG" _artifacts/*.tar.gz --title "$UPSTREAM_TAG" --notes "Built from [chrisdone/hell@$UPSTREAM_TAG](https://github.com/chrisdone/hell/releases/tag/$UPSTREAM_TAG)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM_TAG: ${{ inputs.upstream-tag }}
+
+      - name: Upload assets to existing release
+        if: steps.check-release.outcome == 'success'
+        run: gh release upload --clobber "$UPSTREAM_TAG" _artifacts/*.tar.gz
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM_TAG: ${{ inputs.upstream-tag }}
 
   trigger-formula:
     needs: release
     uses: ./.github/workflows/update-formula.yml
     with:
       version: ${{ inputs.upstream-tag }}
-    secrets: inherit
+    secrets:
+      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}

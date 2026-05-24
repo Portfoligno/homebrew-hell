@@ -29,6 +29,15 @@ main = do
       ])
   let latestTag = Text.strip latestTagRaw
 
+  -- Validate that the API returned a real tag.
+  -- An empty tag list yields "null" from jq's .[0].name on null.
+  if Eq.eq latestTag ""
+    then Exit.die "GitHub API returned empty tag for chrisdone/hell"
+    else IO.pure ()
+  if Eq.eq latestTag "null"
+    then Exit.die "GitHub API returned no tags for chrisdone/hell (got \"null\")"
+    else IO.pure ()
+
   -- Read the current formula version.
   formulaContents <- Text.readFile "Formula/hell.rb"
   let formulaLines = Text.splitOn "\n" formulaContents
@@ -45,7 +54,12 @@ main = do
   Text.putStrLn (Text.concat ["Latest upstream tag: ", latestTag])
 
   -- Compare versions. Date-based tags compare lexicographically.
-  githubOutput <- Environment.getEnv "GITHUB_OUTPUT"
+  (ghOutputExitCode, ghOutputStdout, _ghOutputStderr) <- Text.readProcess
+    (Process.proc "printenv" ["GITHUB_OUTPUT"])
+  githubOutput <- Exit.exitCode
+    (IO.pure (Text.strip ghOutputStdout))
+    (\_ -> Exit.die "GITHUB_OUTPUT is not set (not running in GitHub Actions?)")
+    ghOutputExitCode
   if Ord.gt latestTag currentVersion
     then do
       Text.putStrLn (Text.concat ["Update available: ", currentVersion, " -> ", latestTag])

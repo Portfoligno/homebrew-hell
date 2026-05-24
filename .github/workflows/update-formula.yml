@@ -6,6 +6,9 @@ on:
       version:
         required: true
         type: string
+    secrets:
+      DEPLOY_KEY:
+        required: true
   workflow_dispatch:
     inputs:
       version:
@@ -41,26 +44,40 @@ jobs:
           hell-version: ${{ steps.read-version.outputs.hell-version }}
 
       - name: Update formula
-        run: ./scripts/update-formula.hell ${{ inputs.version }}
+        run: ./scripts/update-formula.hell "$VERSION"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
 
       - name: Configure git user
         uses: Homebrew/actions/git-user-config@master
 
       - name: Create update branch
-        run: git checkout -b update/${{ inputs.version }}
+        run: git checkout -b "update/$VERSION"
+        env:
+          VERSION: ${{ inputs.version }}
 
       - name: Stage formula
         run: git add Formula/hell.rb
 
       - name: Commit formula update
-        run: git commit -m "hell ${{ inputs.version }}"
+        run: git commit -m "hell $VERSION"
+        env:
+          VERSION: ${{ inputs.version }}
 
       - name: Push update branch
-        run: git push origin update/${{ inputs.version }}
+        run: git push --force-with-lease origin "update/$VERSION"
+        env:
+          VERSION: ${{ inputs.version }}
 
       - name: Create pull request
-        run: gh pr create --title "hell ${{ inputs.version }}" --body "Automated formula update for Hell [${{ inputs.version }}](https://github.com/chrisdone/hell/releases/tag/${{ inputs.version }})." --base main --head update/${{ inputs.version }}
+        run: gh pr create --title "hell $VERSION" --body "Automated formula update for Hell [$VERSION](https://github.com/chrisdone/hell/releases/tag/$VERSION)." --base main --head "update/$VERSION"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+
+      - name: Merge pull request
+        run: gh pr merge --squash --delete-branch "update/$VERSION"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}

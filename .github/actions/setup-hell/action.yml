@@ -14,7 +14,7 @@ runs:
       id: hell-cache
       with:
         path: ~/.local/bin/hell
-        key: hell-${{ runner.os }}-${{ runner.arch }}-${{ inputs.hell-version }}
+        key: hell-${{ runner.os }}-${{ runner.arch }}-ghc9.8-${{ inputs.hell-version }}
 
     - name: Setup GHC and Cabal
       if: steps.hell-cache.outputs.cache-hit != 'true'
@@ -37,9 +37,9 @@ runs:
       id: cabal-cache
       with:
         path: ~/.cabal/store
-        key: cabal-${{ runner.os }}-${{ runner.arch }}-${{ inputs.hell-version }}
+        key: cabal-${{ runner.os }}-${{ runner.arch }}-ghc9.8-${{ inputs.hell-version }}
         restore-keys: |
-          cabal-${{ runner.os }}-${{ runner.arch }}-
+          cabal-${{ runner.os }}-${{ runner.arch }}-ghc9.8-
 
     - name: Update Cabal package index
       if: steps.hell-cache.outputs.cache-hit != 'true'
@@ -88,6 +88,8 @@ runs:
         path: ~/.cabal/store
         key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
 
+    # Bootstrap: GITHUB_PATH requires a shell redirect — there is no
+    # single-command alternative in composite actions.
     - name: Add Hell to PATH
       shell: bash
       run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
