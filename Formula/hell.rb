@@ -9,11 +9,11 @@ class Hell < Formula
   on_macos do
     on_arm do
       url "https://github.com/Portfoligno/homebrew-hell/releases/download/2026-05-02/hell-aarch64-apple-darwin.tar.gz"
-      sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+      sha256 "358e82d9a96e7797a13a2c01105cbb650c8c927077c62c19cd63a7cbc0243e87"
     end
     on_intel do
       url "https://github.com/Portfoligno/homebrew-hell/releases/download/2026-05-02/hell-x86_64-apple-darwin.tar.gz"
-      sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+      sha256 "1fa57e74cde3bb4f4a925fccc9c65697889f40bc663cbfd79c88e77fe4132ff7"
     end
   end
 
@@ -25,6 +25,6 @@ class Hell < Formula
     (testpath/"test.hell").write <<~HELL
       main = Text.putStrLn "hello from hell"
     HELL
-    assert_equal "hello from hell", shell_output("#{bin}/hell #{testpath}/test.hell").strip
+    assert_equal "hello from hell", shell_output("\#{bin}/hell \#{testpath}/test.hell").strip
   end
 end
