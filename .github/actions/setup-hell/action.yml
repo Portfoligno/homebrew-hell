@@ -1,5 +1,5 @@
 name: Setup Hell
-description: Build Hell from source and cache the binary for CI use
+description: Set up Hell for CI use — pre-built binary on Linux, built from source on macOS
 
 inputs:
   hell-version:
@@ -16,15 +16,29 @@ runs:
         path: ~/.local/bin/hell
         key: hell-${{ runner.os }}-${{ runner.arch }}-ghc9.8-${{ inputs.hell-version }}
 
-    - name: Setup GHC and Cabal
+    - name: Create install directory
       if: steps.hell-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: mkdir -p ~/.local/bin
+
+    # --- Linux: download pre-built binary from upstream ---
+
+    - name: Download Hell binary
+      if: runner.os == 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: curl -fsSL -o "$HOME/.local/bin/hell" "https://github.com/chrisdone/hell/releases/download/${{ inputs.hell-version }}/hell-linux-amd64"
+
+    # --- macOS: build from source ---
+
+    - name: Setup GHC and Cabal
+      if: runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
       uses: haskell-actions/setup@v2
       with:
         ghc-version: "9.8"
         cabal-version: "latest"
 
     - name: Checkout Hell source
-      if: steps.hell-cache.outputs.cache-hit != 'true'
+      if: runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
       uses: actions/checkout@v4
       with:
         repository: chrisdone/hell
@@ -32,7 +46,7 @@ runs:
         path: _hell-src
 
     - name: Restore Cabal store cache
-      if: steps.hell-cache.outputs.cache-hit != 'true'
+      if: runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
       uses: actions/cache/restore@v4
       id: cabal-cache
       with:
@@ -42,27 +56,24 @@ runs:
           cabal-${{ runner.os }}-${{ runner.arch }}-ghc9.8-
 
     - name: Update Cabal package index
-      if: steps.hell-cache.outputs.cache-hit != 'true'
+      if: runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
       shell: bash
       working-directory: _hell-src
       run: cabal update
 
     - name: Build Hell
-      if: steps.hell-cache.outputs.cache-hit != 'true'
+      if: runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
       shell: bash
       working-directory: _hell-src
       run: cabal build exe:hell -O2
 
-    - name: Create install directory
-      if: steps.hell-cache.outputs.cache-hit != 'true'
-      shell: bash
-      run: mkdir -p ~/.local/bin
-
     - name: Install Hell binary
-      if: steps.hell-cache.outputs.cache-hit != 'true'
+      if: runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
       shell: bash
       working-directory: _hell-src
       run: cabal install --install-method=copy --installdir=$HOME/.local/bin exe:hell
+
+    # --- Shared: finalize ---
 
     - name: Make Hell executable
       if: steps.hell-cache.outputs.cache-hit != 'true'
@@ -77,12 +88,12 @@ runs:
         key: ${{ steps.hell-cache.outputs.cache-primary-key }}
 
     - name: Clean up Hell source
-      if: steps.hell-cache.outputs.cache-hit != 'true'
+      if: runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
       shell: bash
       run: rm -rf _hell-src
 
     - name: Save Cabal store cache
-      if: always() && steps.hell-cache.outputs.cache-hit != 'true' && steps.cabal-cache.outputs.cache-hit != 'true'
+      if: always() && runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true' && steps.cabal-cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
       with:
         path: ~/.cabal/store
