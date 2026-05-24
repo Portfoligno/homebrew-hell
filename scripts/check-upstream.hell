@@ -33,13 +33,13 @@ main = do
   formulaContents <- Text.readFile "Formula/hell.rb"
   let formulaLines = Text.splitOn "\n" formulaContents
   let versionLines = List.filter (\line -> Text.isInfixOf "version \"" line) formulaLines
-  currentVersion <- case versionLines of
-    [] -> Exit.die "Could not find version field in Formula/hell.rb"
-    (line : _rest) -> do
-      let afterPrefix = Tuple.snd (Text.breakOn "version \"" line)
-      let withoutPrefix = Text.drop (Text.length "version \"") afterPrefix
-      let (version, _rest2) = Text.breakOn "\"" withoutPrefix
-      IO.pure version
+  versionLine <- Maybe.maybe
+    (Exit.die "Could not find version field in Formula/hell.rb")
+    IO.pure
+    (Maybe.listToMaybe versionLines)
+  let afterPrefix = Tuple.snd (Text.breakOn "version \"" versionLine)
+  let withoutPrefix = Text.drop (Text.length "version \"") afterPrefix
+  let (currentVersion, _rest2) = Text.breakOn "\"" withoutPrefix
 
   Text.putStrLn (Text.concat ["Current formula version: ", currentVersion])
   Text.putStrLn (Text.concat ["Latest upstream tag: ", latestTag])

@@ -49,9 +49,10 @@ computeSha256 = \version -> \target -> do
 
 main = do
   args <- Environment.getArgs
-  version <- case args of
-    [] -> Exit.die "Usage: update-formula.hell <version-tag>"
-    (v : _rest) -> IO.pure v
+  version <- Maybe.maybe
+    (Exit.die "Usage: update-formula.hell <version-tag>")
+    IO.pure
+    (Maybe.listToMaybe args)
 
   Text.putStrLn (Text.concat ["Updating formula to version ", version])
 
