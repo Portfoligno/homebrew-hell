@@ -52,8 +52,8 @@ jobs:
         id: cabal-cache
         with:
           path: ~/.cabal/store
-          key: cabal-build-${{ matrix.os }}-${{ runner.arch }}-${{ inputs.upstream-tag }}
-          restore-keys: cabal-build-${{ matrix.os }}-${{ runner.arch }}-
+          key: cabal-${{ runner.os }}-${{ runner.arch }}-${{ inputs.upstream-tag }}
+          restore-keys: cabal-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Update Cabal package index
         run: cabal update
