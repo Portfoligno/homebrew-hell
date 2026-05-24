@@ -10,7 +10,7 @@ runs:
   using: composite
   steps:
     - name: Restore Hell binary cache
-      uses: actions/cache@v4
+      uses: actions/cache/restore@v4
       id: hell-cache
       with:
         path: ~/.local/bin/hell
@@ -68,6 +68,13 @@ runs:
       if: steps.hell-cache.outputs.cache-hit != 'true'
       shell: bash
       run: chmod +x ~/.local/bin/hell
+
+    - name: Save Hell binary cache
+      if: steps.hell-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.local/bin/hell
+        key: ${{ steps.hell-cache.outputs.cache-primary-key }}
 
     - name: Clean up Hell source
       if: steps.hell-cache.outputs.cache-hit != 'true'
