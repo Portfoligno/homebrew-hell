@@ -31,8 +31,11 @@ jobs:
         with:
           hell-version: ${{ steps.read-version.outputs.hell-version }}
 
+      - name: Register local tap
+        run: brew tap Portfoligno/hell .
+
       - name: Install from tap
-        run: brew install --formula ./Formula/hell.rb
+        run: brew install Portfoligno/hell/hell
 
       - name: Verify installation
         run: ./scripts/verify-install.hell
