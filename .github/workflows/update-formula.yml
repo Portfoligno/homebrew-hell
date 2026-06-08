@@ -51,6 +51,8 @@ jobs:
 
       - name: Configure git user
         uses: Homebrew/actions/git-user-config@master
+        with:
+          username: "github-actions[bot]"
 
       - name: Create update branch
         run: git checkout -b "update/$VERSION"
