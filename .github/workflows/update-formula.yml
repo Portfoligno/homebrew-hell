@@ -35,8 +35,7 @@ jobs:
       # Bootstrap: read .hell-version for the composite action.
       - name: Read Hell version
         id: read-version
-        shell: bash
-        run: printf 'hell-version=%s\n' "$(cat .hell-version)" >> "$GITHUB_OUTPUT"
+        run: printf hell-version=%s\\n "$(cat .hell-version)" >>"$GITHUB_OUTPUT"
 
       - name: Setup Hell
         uses: ./.github/actions/setup-hell
@@ -55,7 +54,7 @@ jobs:
           username: "github-actions[bot]"
 
       - name: Create update branch
-        run: git checkout -b "update/$VERSION"
+        run: git checkout -b update/"$VERSION"
         env:
           VERSION: ${{ inputs.version }}
 
@@ -68,18 +67,18 @@ jobs:
           VERSION: ${{ inputs.version }}
 
       - name: Push update branch
-        run: git push --force-with-lease origin "update/$VERSION"
+        run: git push --force-with-lease origin update/"$VERSION"
         env:
           VERSION: ${{ inputs.version }}
 
       - name: Create pull request
-        run: gh pr create --title "hell $VERSION" --body "Automated formula update for Hell [$VERSION](https://github.com/chrisdone/hell/releases/tag/$VERSION)." --base main --head "update/$VERSION"
+        run: gh pr create --title "hell $VERSION" --body "Automated formula update for Hell [$VERSION](https://github.com/chrisdone/hell/releases/tag/$VERSION)." --base main --head update/"$VERSION"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ inputs.version }}
 
       - name: Merge pull request
-        run: gh pr merge --squash --delete-branch "update/$VERSION"
+        run: gh pr merge --squash --delete-branch update/"$VERSION"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ inputs.version }}

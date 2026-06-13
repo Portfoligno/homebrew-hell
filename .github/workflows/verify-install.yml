@@ -23,8 +23,7 @@ jobs:
       # Bootstrap: read .hell-version for the composite action.
       - name: Read Hell version
         id: read-version
-        shell: bash
-        run: printf 'hell-version=%s\n' "$(cat .hell-version)" >> "$GITHUB_OUTPUT"
+        run: printf hell-version=%s\\n "$(cat .hell-version)" >>"$GITHUB_OUTPUT"
 
       - name: Setup Hell
         uses: ./.github/actions/setup-hell

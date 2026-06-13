@@ -71,7 +71,9 @@ jobs:
         run: chmod +x _archive/hell
 
       - name: Create tarball
-        run: tar -czf hell-${{ matrix.target }}.tar.gz -C _archive hell
+        env:
+          TARGET: ${{ matrix.target }}
+        run: tar -czf hell-"$TARGET".tar.gz -C _archive hell
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

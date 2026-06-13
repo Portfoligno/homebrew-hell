@@ -18,15 +18,17 @@ runs:
 
     - name: Create install directory
       if: steps.hell-cache.outputs.cache-hit != 'true'
-      shell: bash
+      shell: sh
       run: mkdir -p ~/.local/bin
 
     # --- Linux: download pre-built binary from upstream ---
 
     - name: Download Hell binary
       if: runner.os == 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
-      shell: bash
-      run: curl -fsSL -o "$HOME/.local/bin/hell" "https://github.com/chrisdone/hell/releases/download/${{ inputs.hell-version }}/hell-linux-amd64"
+      shell: sh
+      env:
+        HELL_VERSION: ${{ inputs.hell-version }}
+      run: curl -fsSLo"$HOME"/.local/bin/hell https://github.com/chrisdone/hell/releases/download/"$HELL_VERSION"/hell-linux-amd64
 
     # --- macOS: build from source ---
 
@@ -57,27 +59,27 @@ runs:
 
     - name: Update Cabal package index
       if: runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
-      shell: bash
+      shell: sh
       working-directory: _hell-src
       run: cabal update
 
     - name: Build Hell
       if: runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
-      shell: bash
+      shell: sh
       working-directory: _hell-src
       run: cabal build exe:hell -O2
 
     - name: Install Hell binary
       if: runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
-      shell: bash
+      shell: sh
       working-directory: _hell-src
-      run: cabal install --install-method=copy --installdir=$HOME/.local/bin exe:hell
+      run: cabal install --install-method=copy --installdir="$HOME"/.local/bin exe:hell
 
     # --- Shared: finalize ---
 
     - name: Make Hell executable
       if: steps.hell-cache.outputs.cache-hit != 'true'
-      shell: bash
+      shell: sh
       run: chmod +x ~/.local/bin/hell
 
     - name: Save Hell binary cache
@@ -89,7 +91,7 @@ runs:
 
     - name: Clean up Hell source
       if: runner.os != 'Linux' && steps.hell-cache.outputs.cache-hit != 'true'
-      shell: bash
+      shell: sh
       run: rm -rf _hell-src
 
     - name: Save Cabal store cache
@@ -102,5 +104,5 @@ runs:
     # Bootstrap: GITHUB_PATH requires a shell redirect — there is no
     # single-command alternative in composite actions.
     - name: Add Hell to PATH
-      shell: bash
-      run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      shell: sh
+      run: printf %s/.local/bin\\n "$HOME" >>"$GITHUB_PATH"
