@@ -62,7 +62,10 @@ jobs:
         run: cabal update
 
       - name: Build and install Hell binary
+        if: matrix.arch != 'x86_64'
         run: cabal install exe:hell -O2 --install-method=copy --overwrite-policy=always --installdir=_archive
+      - if: matrix.arch == 'x86_64'
+        run: cabal install exe:hell -O2 --install-method=copy --overwrite-policy=always --installdir=_archive --constraint='crypton -support_s2n_bignum'
 
       - name: Strip binary
         run: strip _archive/hell
