@@ -49,7 +49,7 @@ jobs:
           VERSION: ${{ inputs.version }}
 
       - name: Configure git user
-        uses: Homebrew/actions/git-user-config@master
+        uses: Homebrew/actions/git-user-config@main
         with:
           username: "github-actions[bot]"
 
