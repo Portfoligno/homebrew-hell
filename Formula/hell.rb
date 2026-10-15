@@ -3,17 +3,17 @@
 class Hell < Formula
   desc "Haskell-based shell scripting language"
   homepage "https://github.com/chrisdone/hell"
-  version "2026-05-29"
+  version "2026-10-02"
   license "BSD-3-Clause"
 
   on_macos do
     on_arm do
-      url "https://github.com/Portfoligno/homebrew-hell/releases/download/2026-05-29/hell-aarch64-apple-darwin.tar.gz"
-      sha256 "8aea7c8d5a301da8787032aee49749261dca62d1716e022db45d40f5ed29c2be"
+      url "https://github.com/Portfoligno/homebrew-hell/releases/download/2026-10-02/hell-aarch64-apple-darwin.tar.gz"
+      sha256 "b29d8b37825e30b214b9875d2bf110d60981bd38af0da0d0ff51f3e7d359caaf"
     end
     on_intel do
-      url "https://github.com/Portfoligno/homebrew-hell/releases/download/2026-05-29/hell-x86_64-apple-darwin.tar.gz"
-      sha256 "ba6731d7b406661dfdefed67660cee46682d79697fa915b003bebd0a36bb8c4e"
+      url "https://github.com/Portfoligno/homebrew-hell/releases/download/2026-10-02/hell-x86_64-apple-darwin.tar.gz"
+      sha256 "f3fd37f6b28601c77c170ec0113d1d49731d30b24450bd1fbe9721b19508f8a3"
     end
   end
 
